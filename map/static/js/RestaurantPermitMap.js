@@ -14,16 +14,6 @@ function formatPerCapita(n) {
   return n < 10 ? n.toFixed(1) : Math.round(n).toString()
 }
 
-// "PERMIT - RENOVATION/ALTERATION" -> "Renovation / Alteration".
-// The source data prefixes everything with "PERMIT -" or "PERMIT –"
-// (with both a hyphen and an em-dash variant). Strip it once here.
-function prettifyPermitType(raw) {
-  return raw
-    .replace(/^PERMIT\s*[-–]\s*/i, "")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\//g, " / ")
-}
 
 function Legend({ max, unitLabel, format }) {
   if (!max) return null
@@ -204,7 +194,7 @@ export default function RestaurantPermitMap() {
       if (top.length > 0) {
         typeBreakdown =
           "<br/><small>" +
-          top.map(([t, n]) => `${prettifyPermitType(t)}: ${n}`).join("<br/>") +
+          top.map(([t, n]) => `${t}: ${n}`).join("<br/>") +
           "</small>"
       }
     }

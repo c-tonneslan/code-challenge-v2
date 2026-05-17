@@ -11,6 +11,24 @@ from map.models import RestaurantPermit
 BATCH_SIZE = 500
 
 
+def prettify_permit_type(raw):
+    """`PERMIT - RENOVATION/ALTERATION` -> `Renovation / Alteration`.
+
+    Source CSV ships everything prefixed with `PERMIT -` (and sometimes the
+    em-dash variant `PERMIT –`). Strip that and title-case the rest so the
+    type travels cleanly through the API and into the popup.
+    """
+    if not raw:
+        return raw
+    head = raw.strip()
+    for prefix in ("PERMIT - ", "PERMIT – "):
+        if head.upper().startswith(prefix):
+            head = head[len(prefix):]
+            break
+    head = head.replace("/", " / ")
+    return head.title()
+
+
 class Command(BaseCommand):
     help = "Load restaurant permit data from a CSV file"
 
@@ -51,7 +69,7 @@ class Command(BaseCommand):
                 permits.append(
                     RestaurantPermit(
                         permit_id=row["id"],
-                        permit_type=row["permit_type"],
+                        permit_type=prettify_permit_type(row["permit_type"]),
                         application_start_date=datetime.fromisoformat(
                             row["application_start_date"]
                         ),
