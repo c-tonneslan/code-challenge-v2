@@ -15,6 +15,30 @@ function formatPerCapita(n) {
 }
 
 
+function Sparkline({ values, width = 90, height = 22 }) {
+  if (!values || values.length < 2) return null
+  const max = Math.max(...values, 1)
+  const stepX = width / (values.length - 1)
+  const points = values
+    .map((v, i) => `${(i * stepX).toFixed(1)},${(height - (v / max) * height).toFixed(1)}`)
+    .join(" ")
+  return (
+    <svg
+      width={width}
+      height={height}
+      style={{ verticalAlign: "middle", marginLeft: 8 }}
+      aria-hidden="true"
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="#2171b5"
+        strokeWidth="1.5"
+      />
+    </svg>
+  )
+}
+
 function Legend({ max, unitLabel, format }) {
   if (!max) return null
   // Walk the four shades and spell out the range each one represents for
@@ -124,10 +148,33 @@ export default function RestaurantPermitMap() {
   const [mode, setMode] = useState(initial.mode)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [trends, setTrends] = useState(null)
 
   useEffect(() => {
     writeQuery({ year, mode })
   }, [year, mode])
+
+  useEffect(() => {
+    // Trends are static across the year filter, so fetch once.
+    fetch("/map-data/trends/")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setTrends(data.trends))
+      .catch(() => {
+        // Sparklines are decoration; don't surface the error.
+      })
+  }, [])
+
+  const yearRange = useMemo(() => {
+    // Inclusive range covered by the year select.
+    return Array.from({ length: 11 }, (_, i) => 2016 + i)
+  }, [])
+
+  function seriesFor(areaId) {
+    if (!trends) return null
+    const row = trends[String(areaId)]
+    if (!row) return null
+    return yearRange.map((y) => row[y] || 0)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -315,6 +362,7 @@ export default function RestaurantPermitMap() {
                     : row.num_permits.toLocaleString()}
                   )
                 </span>
+                <Sparkline values={seriesFor(row.area_id)} />
               </li>
             ))}
           </ol>
