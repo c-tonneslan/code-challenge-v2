@@ -81,6 +81,28 @@ def test_map_data_view_area_with_no_permits():
 
 
 @pytest.mark.django_db
+def test_map_data_view_csv():
+    CommunityArea.objects.create(name="Beverly", area_id="1", population=20_000)
+    RestaurantPermit.objects.create(
+        community_area_id="1", issue_date=date(2021, 1, 15)
+    )
+
+    client = APIClient()
+    response = client.get(reverse("map_data", query={"year": 2021, "format": "csv"}))
+
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("text/csv")
+
+    body = response.content.decode()
+    lines = body.strip().splitlines()
+    header = lines[0]
+    assert "name" in header
+    assert "num_permits" in header
+    assert "permits_per_10k" in header
+    assert any("Beverly" in line and ",1," in line for line in lines[1:])
+
+
+@pytest.mark.django_db
 def test_map_data_view_permits_per_10k():
     # 5 permits in an area of 20,000 people is 2.5 per 10k
     CommunityArea.objects.create(name="Beverly", area_id="1", population=20_000)

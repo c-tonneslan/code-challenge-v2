@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from map.models import CommunityArea, RestaurantPermit
+from map.renderers import CSVRenderer, JSONRenderer
 from map.serializers import CommunityAreaSerializer
 
 
@@ -16,6 +17,8 @@ class Home(TemplateView):
 
 
 class MapDataView(APIView):
+    renderer_classes = [JSONRenderer, CSVRenderer]
+
     def get(self, request):
         year = request.query_params.get("year")
 
