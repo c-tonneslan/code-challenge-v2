@@ -81,6 +81,37 @@ def test_map_data_view_area_with_no_permits():
 
 
 @pytest.mark.django_db
+def test_map_data_view_permits_by_type():
+    CommunityArea.objects.create(name="Beverly", area_id="1")
+
+    RestaurantPermit.objects.create(
+        community_area_id="1",
+        permit_type="PERMIT - RENOVATION/ALTERATION",
+        issue_date=date(2021, 1, 15),
+    )
+    RestaurantPermit.objects.create(
+        community_area_id="1",
+        permit_type="PERMIT - RENOVATION/ALTERATION",
+        issue_date=date(2021, 2, 1),
+    )
+    RestaurantPermit.objects.create(
+        community_area_id="1",
+        permit_type="PERMIT - NEW CONSTRUCTION",
+        issue_date=date(2021, 3, 1),
+    )
+
+    client = APIClient()
+    response = client.get(reverse("map_data", query={"year": 2021}))
+
+    row = next(r for r in response.data if r["name"] == "Beverly")
+    assert row["num_permits"] == 3
+    assert row["permits_by_type"] == {
+        "PERMIT - RENOVATION/ALTERATION": 2,
+        "PERMIT - NEW CONSTRUCTION": 1,
+    }
+
+
+@pytest.mark.django_db
 def test_map_data_view_csv():
     CommunityArea.objects.create(name="Beverly", area_id="1", population=20_000)
     RestaurantPermit.objects.create(

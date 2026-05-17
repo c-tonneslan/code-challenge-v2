@@ -14,6 +14,17 @@ function formatPerCapita(n) {
   return n < 10 ? n.toFixed(1) : Math.round(n).toString()
 }
 
+// "PERMIT - RENOVATION/ALTERATION" -> "Renovation / Alteration".
+// The source data prefixes everything with "PERMIT -" or "PERMIT –"
+// (with both a hyphen and an em-dash variant). Strip it once here.
+function prettifyPermitType(raw) {
+  return raw
+    .replace(/^PERMIT\s*[-–]\s*/i, "")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\//g, " / ")
+}
+
 function Legend({ max, unitLabel, format }) {
   if (!max) return null
   // Walk the four shades and spell out the range each one represents for
@@ -178,7 +189,23 @@ export default function RestaurantPermitMap() {
           ? "no population data"
           : `${formatPerCapita(value)} permits per 10k residents`
         : `${value || 0} permit${value === 1 ? "" : "s"}`
-    layer.bindPopup(`<strong>${name}</strong><br/>${popupLine} in ${year}`)
+
+    let typeBreakdown = ""
+    if (row && row.permits_by_type) {
+      const top = Object.entries(row.permits_by_type)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+      if (top.length > 0) {
+        typeBreakdown =
+          "<br/><small>" +
+          top.map(([t, n]) => `${prettifyPermitType(t)}: ${n}`).join("<br/>") +
+          "</small>"
+      }
+    }
+
+    layer.bindPopup(
+      `<strong>${name}</strong><br/>${popupLine} in ${year}${typeBreakdown}`
+    )
 
     layer.on("mouseover", () => {
       layer.setStyle({ weight: 2, color: "#222" })

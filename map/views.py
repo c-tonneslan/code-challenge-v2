@@ -23,25 +23,32 @@ class MapDataView(APIView):
         year = request.query_params.get("year")
 
         permits_by_area = {}
+        types_by_area = {}
         if year:
             try:
                 year_int = int(year)
             except (TypeError, ValueError):
                 year_int = None
             if year_int is not None:
-                counts = (
+                rows = (
                     RestaurantPermit.objects
                     .filter(issue_date__year=year_int)
-                    .values("community_area_id")
+                    .values("community_area_id", "permit_type")
                     .annotate(n=Count("id"))
                 )
-                permits_by_area = {row["community_area_id"]: row["n"] for row in counts}
+                for row in rows:
+                    area_id = row["community_area_id"]
+                    permits_by_area[area_id] = permits_by_area.get(area_id, 0) + row["n"]
+                    types_by_area.setdefault(area_id, {})[row["permit_type"]] = row["n"]
 
         community_areas = CommunityArea.objects.all()
         serializer = CommunityAreaSerializer(
             community_areas,
             many=True,
-            context={"permits_by_area": permits_by_area},
+            context={
+                "permits_by_area": permits_by_area,
+                "types_by_area": types_by_area,
+            },
         )
         return Response(serializer.data)
 
