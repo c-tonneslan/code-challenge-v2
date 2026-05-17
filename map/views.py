@@ -1,12 +1,13 @@
 import os
 
+from django.db.models import Count
 from django.shortcuts import render
 from django.views.generic import TemplateView
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from map.models import CommunityArea
+from map.models import CommunityArea, RestaurantPermit
 from map.serializers import CommunityAreaSerializer
 
 
@@ -16,11 +17,28 @@ class Home(TemplateView):
 
 class MapDataView(APIView):
     def get(self, request):
+        year = request.query_params.get("year")
+
+        permits_by_area = {}
+        if year:
+            try:
+                year_int = int(year)
+            except (TypeError, ValueError):
+                year_int = None
+            if year_int is not None:
+                counts = (
+                    RestaurantPermit.objects
+                    .filter(issue_date__year=year_int)
+                    .values("community_area_id")
+                    .annotate(n=Count("id"))
+                )
+                permits_by_area = {row["community_area_id"]: row["n"] for row in counts}
+
         community_areas = CommunityArea.objects.all()
         serializer = CommunityAreaSerializer(
             community_areas,
             many=True,
-            context={"year": request.query_params.get("year")},
+            context={"permits_by_area": permits_by_area},
         )
         return Response(serializer.data)
 

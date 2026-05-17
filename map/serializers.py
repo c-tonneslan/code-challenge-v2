@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from map.models import CommunityArea, RestaurantPermit
+from map.models import CommunityArea
 
 
 class CommunityAreaSerializer(serializers.ModelSerializer):
@@ -11,10 +11,5 @@ class CommunityAreaSerializer(serializers.ModelSerializer):
     num_permits = serializers.SerializerMethodField()
 
     def get_num_permits(self, obj):
-        year = self.context.get("year")
-        if not year:
-            return 0
-        return RestaurantPermit.objects.filter(
-            community_area_id=str(obj.area_id),
-            issue_date__year=int(year),
-        ).count()
+        counts = self.context.get("permits_by_area", {})
+        return counts.get(str(obj.area_id), 0)
