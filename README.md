@@ -16,7 +16,22 @@
 >
 > **Files changed:** `map/serializers.py`, `map/views.py`, `map/static/js/RestaurantPermitMap.js`, `tests/test_views.py`, `README.md`.
 >
-> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `3 passed`.
+> After the basics worked I went further:
+>
+> - Added a `population` column on `CommunityArea`, a loader, and a CSV of 2023 5-year ACS totals per community area (sourced from the City of Chicago's `t68z-cikk` dataset). The API now returns `permits_per_10k` alongside the raw count.
+> - Added a toggle on the page between raw counts and per-capita. Per-capita re-ranks the map: Lincoln Park and Loop drop, smaller dense neighborhoods rise.
+> - Wrote [`METHODOLOGY.md`](METHODOLOGY.md) covering sources, joins, the per-capita formula, and what the map *doesn't* see (closures, permit type, denominator quirks like the Loop's daytime-population problem).
+>
+> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `4 passed`.
+>
+> **Loading the data:**
+>
+> ```bash
+> docker compose run --rm app python manage.py loaddata \
+>   map/fixtures/community_areas.json map/fixtures/restaurant_permits.json
+> docker compose run --rm app python manage.py load_community_area_population \
+>   data/raw/community_area_population_acs2023.csv
+> ```
 
 ---
 
