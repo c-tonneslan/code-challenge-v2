@@ -81,6 +81,24 @@ def test_map_data_view_area_with_no_permits():
 
 
 @pytest.mark.django_db
+def test_trends_view():
+    CommunityArea.objects.create(name="Beverly", area_id="1")
+    CommunityArea.objects.create(name="Lincoln Park", area_id="2")
+
+    for d in [date(2019, 1, 1), date(2020, 1, 1), date(2020, 6, 1), date(2021, 3, 1)]:
+        RestaurantPermit.objects.create(community_area_id="1", issue_date=d)
+    RestaurantPermit.objects.create(community_area_id="2", issue_date=date(2020, 1, 1))
+
+    client = APIClient()
+    response = client.get(reverse("trends"))
+
+    assert response.status_code == 200
+    trends = response.data["trends"]
+    assert trends["1"] == {2019: 1, 2020: 2, 2021: 1}
+    assert trends["2"] == {2020: 1}
+
+
+@pytest.mark.django_db
 def test_map_data_view_permits_by_type():
     CommunityArea.objects.create(name="Beverly", area_id="1")
 
