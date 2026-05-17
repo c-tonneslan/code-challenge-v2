@@ -22,3 +22,12 @@ class RestaurantPermit(models.Model):
     street_name = models.CharField(max_length=32, null=True, blank=True)
     location = gis_models.PointField(null=True, blank=True)
     community_area_id = models.CharField(max_length=2, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            # Serves the choropleth's per-year GROUP BY community_area_id.
+            models.Index(
+                fields=["issue_date", "community_area_id"],
+                name="permit_date_area_idx",
+            ),
+        ]
