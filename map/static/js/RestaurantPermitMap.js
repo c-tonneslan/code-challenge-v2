@@ -71,6 +71,7 @@ export default function RestaurantPermitMap() {
 
   function setAreaInteraction(feature, layer) {
     const areaId = feature.properties.area_numbe
+    const name = feature.properties.community
     const count = countsById.get(String(areaId)) || 0
     const pct = maxNumPermits > 0 ? count / maxNumPermits : 0
 
@@ -79,6 +80,18 @@ export default function RestaurantPermitMap() {
       fillOpacity: 0.75,
       weight: 1,
       color: "#666",
+    })
+
+    layer.bindPopup(
+      `<strong>${name}</strong><br/>${count} permit${count === 1 ? "" : "s"} in ${year}`
+    )
+    layer.on("mouseover", () => {
+      layer.setStyle({ weight: 2, color: "#222" })
+      layer.openPopup()
+    })
+    layer.on("mouseout", () => {
+      layer.setStyle({ weight: 1, color: "#666" })
+      layer.closePopup()
     })
   }
 
