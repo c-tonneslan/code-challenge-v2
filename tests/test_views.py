@@ -78,3 +78,23 @@ def test_map_data_view_area_with_no_permits():
     by_name = {row["name"]: row for row in response.data}
     assert by_name["Beverly"]["num_permits"] == 1
     assert by_name["Lincoln Park"]["num_permits"] == 0
+
+
+@pytest.mark.django_db
+def test_map_data_view_permits_per_10k():
+    # 5 permits in an area of 20,000 people is 2.5 per 10k
+    CommunityArea.objects.create(name="Beverly", area_id="1", population=20_000)
+    for _ in range(5):
+        RestaurantPermit.objects.create(
+            community_area_id="1", issue_date=date(2021, 1, 15)
+        )
+
+    # No population, no per-capita number
+    CommunityArea.objects.create(name="Mystery", area_id="2", population=None)
+
+    client = APIClient()
+    response = client.get(reverse("map_data", query={"year": 2021}))
+
+    by_name = {row["name"]: row for row in response.data}
+    assert by_name["Beverly"]["permits_per_10k"] == 2.5
+    assert by_name["Mystery"]["permits_per_10k"] is None
