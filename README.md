@@ -20,9 +20,14 @@
 >
 > - Added a `population` column on `CommunityArea`, a loader, and a CSV of 2023 5-year ACS totals per community area (sourced from the City of Chicago's `t68z-cikk` dataset). The API now returns `permits_per_10k` alongside the raw count.
 > - Added a toggle on the page between raw counts and per-capita. Per-capita re-ranks the map: Lincoln Park and Loop drop, smaller dense neighborhoods rise.
+> - Composite index on `(issue_date, community_area_id)` so the aggregate runs as a bitmap index scan instead of seq scan. Before/after `EXPLAIN ANALYZE` in the commit body.
+> - `/map-data/?year=2021&format=csv` returns the same rows as CSV, for journalists who want the dataset without a JSON parser.
+> - Break the per-area count out by `permit_type`. The popup now shows the top two categories under the count, so a heavy-renovation neighborhood reads different from a heavy-new-construction one.
+> - Title-cased the community area names at load time (with manual overrides for O'Hare and McKinley Park). Used to be a regex in the React component.
+> - Loading and empty-state messages so a year outside the dataset's range doesn't render a blank map without an explanation.
 > - Wrote [`METHODOLOGY.md`](METHODOLOGY.md) covering sources, joins, the per-capita formula, and what the map *doesn't* see (closures, permit type, denominator quirks like the Loop's daytime-population problem).
 >
-> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `4 passed`.
+> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `6 passed`.
 >
 > **Loading the data:**
 >
