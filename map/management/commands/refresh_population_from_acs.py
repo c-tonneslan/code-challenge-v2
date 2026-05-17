@@ -25,7 +25,6 @@ import sys
 
 from django.core.management.base import BaseCommand
 
-
 # Cook County, Illinois.
 STATE_FIPS = "17"
 COUNTY_FIPS = "031"

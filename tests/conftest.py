@@ -1,5 +1,6 @@
-import pytest
 import functools
+
+import pytest
 
 
 @pytest.fixture

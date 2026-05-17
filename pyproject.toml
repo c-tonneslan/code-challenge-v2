@@ -1,0 +1,42 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    "map/migrations",
+    "node_modules",
+    "static",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle + pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "DJ",            # django-specific
+]
+# DJ001: null=True on CharField — the loader treats empty strings and nulls
+# the same. B007: loop var used for typing only in load_*. Long lines on
+# views/commands stay (docstrings + readable SoQL > 100-char hard rule).
+ignore = ["DJ001", "DJ008", "B007", "E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = [
+    "map/migrations/",
+    "tests/",
+]
+plugins = []
+
+[[tool.mypy.overrides]]
+# Django dynamic attributes (objects manager, Meta inner class, etc.) are not
+# worth fighting mypy over without django-stubs in the requirements.
+module = ["map.models", "map.admin", "map.settings", "map.management.commands.refresh_population_from_acs"]
+ignore_errors = true

@@ -7,7 +7,6 @@ from django.core.management.base import BaseCommand
 
 from map.models import RestaurantPermit
 
-
 BATCH_SIZE = 500
 
 
@@ -45,7 +44,7 @@ class Command(BaseCommand):
         permits = []
         skipped = 0
 
-        with open(csv_file, "r") as file:
+        with open(csv_file) as file:
             reader = csv.DictReader(file)
 
             for row in reader:

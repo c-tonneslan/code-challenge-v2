@@ -4,7 +4,6 @@ from django.core.management.base import BaseCommand
 
 from map.models import CommunityArea
 
-
 # Toponyms that title() gets wrong. Mostly Irish surnames and a couple
 # of contractions that come through the GeoJSON in all-caps.
 _NAME_OVERRIDES = {
@@ -34,7 +33,7 @@ class Command(BaseCommand):
 
         geojson_file = kwargs["geojson_file"]
 
-        with open(geojson_file, "r") as f:
+        with open(geojson_file) as f:
             community_areas = json.load(f)
 
         community_area_objs = [

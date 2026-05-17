@@ -12,8 +12,8 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         try:
             assert settings.CACHES
-        except AttributeError:
-            raise CommandError("No cache configured. Check CACHES in settings.py.")
+        except AttributeError as e:
+            raise CommandError("No cache configured. Check CACHES in settings.py.") from e
 
         cache.clear()
         self.stdout.write("Successfully cleared the cache.")

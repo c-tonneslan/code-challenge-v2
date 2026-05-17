@@ -1,22 +1,31 @@
-name: Run tests
+name: ci
 
 on:
   push:
-    branches:
-      - main
-      - deploy
+    branches: [main, deploy]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  test:
-    name: Run tests
+  lint:
+    name: Lint + type-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Run tests
-        run: |
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: ruff check .
+      - run: mypy map
+
+  test:
+    name: Tests (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
           docker compose -f docker-compose.yml \
             -f tests/docker-compose.yml \
             run --rm app

@@ -26,7 +26,7 @@ class Command(BaseCommand):
         def norm(s):
             return "".join(ch for ch in (s or "").upper() if ch.isalnum())
 
-        with open(path, "r") as f:
+        with open(path) as f:
             reader = csv.DictReader(f)
             populations = {
                 norm(row["community_area"]): int(float(row["total_population"]))
