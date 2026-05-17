@@ -93,12 +93,41 @@ function MetricToggle({ mode, setMode }) {
   )
 }
 
+function readQuery() {
+  if (typeof window === "undefined") return { year: 2026, mode: "count" }
+  const params = new URLSearchParams(window.location.search)
+  const y = Number(params.get("year"))
+  const m = params.get("mode")
+  return {
+    year: Number.isFinite(y) && y >= 2016 && y <= 2026 ? y : 2026,
+    mode: m === "per_capita" ? "per_capita" : "count",
+  }
+}
+
+function writeQuery({ year, mode }) {
+  if (typeof window === "undefined") return
+  const params = new URLSearchParams(window.location.search)
+  params.set("year", String(year))
+  if (mode === "per_capita") {
+    params.set("mode", "per_capita")
+  } else {
+    params.delete("mode")
+  }
+  const next = `${window.location.pathname}?${params.toString()}`
+  window.history.replaceState({}, "", next)
+}
+
 export default function RestaurantPermitMap() {
+  const initial = readQuery()
   const [currentYearData, setCurrentYearData] = useState([])
-  const [year, setYear] = useState(2026)
-  const [mode, setMode] = useState("count")
+  const [year, setYear] = useState(initial.year)
+  const [mode, setMode] = useState(initial.mode)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    writeQuery({ year, mode })
+  }, [year, mode])
 
   useEffect(() => {
     const controller = new AbortController()
