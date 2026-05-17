@@ -6,6 +6,40 @@ import "leaflet/dist/leaflet.css"
 
 import RAW_COMMUNITY_AREAS from "../../../data/raw/community-areas.geojson"
 
+const COMMUNITY_AREA_COLORS = ["#eff3ff", "#bdd7e7", "#6baed6", "#2171b5"]
+
+function Legend({ maxNumPermits }) {
+  if (!maxNumPermits) return null
+  // Walk the four shades and spell out the permit-count range each one
+  // represents for the current year, so a viewer can read the map without
+  // having to hover every shape.
+  const bands = COMMUNITY_AREA_COLORS.map((color, i) => {
+    const upper = Math.round(((i + 1) / COMMUNITY_AREA_COLORS.length) * maxNumPermits)
+    const lower =
+      i === 0 ? 0 : Math.round((i / COMMUNITY_AREA_COLORS.length) * maxNumPermits) + 1
+    return { color, label: lower === upper ? `${upper}` : `${lower}–${upper}` }
+  })
+  return (
+    <div className="d-flex flex-wrap align-items-center gap-2 mb-3 small">
+      <span className="text-muted">Permits issued:</span>
+      {bands.map(({ color, label }) => (
+        <span key={color} className="d-inline-flex align-items-center gap-1">
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              background: color,
+              border: "1px solid #999",
+              display: "inline-block",
+            }}
+          />
+          <span>{label}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function YearSelect({ year, setYear }) {
   // Filter by the permit issue year for each restaurant
   const startYear = 2026
@@ -33,8 +67,6 @@ function YearSelect({ year, setYear }) {
 }
 
 export default function RestaurantPermitMap() {
-  const communityAreaColors = ["#eff3ff", "#bdd7e7", "#6baed6", "#2171b5"]
-
   const [currentYearData, setCurrentYearData] = useState([])
   const [year, setYear] = useState(2026)
 
@@ -68,10 +100,10 @@ export default function RestaurantPermitMap() {
   )
 
   function getColor(percentageOfPermits) {
-    if (percentageOfPermits > 0.75) return communityAreaColors[3]
-    if (percentageOfPermits > 0.5) return communityAreaColors[2]
-    if (percentageOfPermits > 0.25) return communityAreaColors[1]
-    return communityAreaColors[0]
+    if (percentageOfPermits > 0.75) return COMMUNITY_AREA_COLORS[3]
+    if (percentageOfPermits > 0.5) return COMMUNITY_AREA_COLORS[2]
+    if (percentageOfPermits > 0.25) return COMMUNITY_AREA_COLORS[1]
+    return COMMUNITY_AREA_COLORS[0]
   }
 
   function setAreaInteraction(feature, layer) {
@@ -110,6 +142,9 @@ export default function RestaurantPermitMap() {
         Maximum number of restaurant permits in a single area:{" "}
         <strong>{maxNumPermits.toLocaleString()}</strong>
       </p>
+
+      <Legend maxNumPermits={maxNumPermits} />
+
       <MapContainer id="restaurant-map" center={[41.88, -87.62]} zoom={10}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
