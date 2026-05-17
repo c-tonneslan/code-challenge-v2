@@ -99,6 +99,13 @@ export default function RestaurantPermitMap() {
     [currentYearData]
   )
 
+  const topAreas = useMemo(() => {
+    return [...currentYearData]
+      .filter((row) => row.num_permits > 0)
+      .sort((a, b) => b.num_permits - a.num_permits)
+      .slice(0, 5)
+  }, [currentYearData])
+
   function getColor(percentageOfPermits) {
     if (percentageOfPermits > 0.75) return COMMUNITY_AREA_COLORS[3]
     if (percentageOfPermits > 0.5) return COMMUNITY_AREA_COLORS[2]
@@ -158,6 +165,22 @@ export default function RestaurantPermitMap() {
           />
         ) : null}
       </MapContainer>
+
+      {topAreas.length > 0 && (
+        <div className="mt-4">
+          <h2 className="fs-3">Most permits in {year}</h2>
+          <ol className="fs-5">
+            {topAreas.map((row) => (
+              <li key={row.area_id}>
+                {row.name.replace(/\b\w/g, (c) => c.toUpperCase())}
+                <span className="text-muted">
+                  {" "}({row.num_permits.toLocaleString()})
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </>
   )
 }
