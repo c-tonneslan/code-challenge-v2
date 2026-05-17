@@ -5,6 +5,7 @@ from django.contrib.gis.db import models as gis_models
 class CommunityArea(models.Model):
     name = models.CharField(max_length=32, null=True, blank=True)
     area_id = models.IntegerField(null=True, blank=True)
+    population = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.name.title()
