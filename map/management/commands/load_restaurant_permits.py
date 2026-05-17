@@ -1,10 +1,14 @@
 import csv
 from datetime import datetime
 
+from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.geos.error import GEOSException
 from django.core.management.base import BaseCommand
 
 from map.models import RestaurantPermit
+
+
+BATCH_SIZE = 500
 
 
 class Command(BaseCommand):
@@ -20,16 +24,32 @@ class Command(BaseCommand):
 
         csv_file = kwargs["csv_file"]
 
+        permits = []
+        skipped = 0
+
         with open(csv_file, "r") as file:
             reader = csv.DictReader(file)
 
             for row in reader:
                 has_valid_dates = row["application_start_date"] and row["issue_date"]
                 if not has_valid_dates or not row["location"]:
+                    skipped += 1
                     continue
 
+                # Validate the geometry up front. GEOSGeometry will raise on
+                # malformed WKT/WKB; we'd rather catch one bad row at parse
+                # time than blow up the whole bulk_create later.
                 try:
-                    restaurant = RestaurantPermit(
+                    location = GEOSGeometry(row["location"])
+                except GEOSException:
+                    self.stdout.write(
+                        f'Invalid location for ID {row["id"]}. Skipping...'
+                    )
+                    skipped += 1
+                    continue
+
+                permits.append(
+                    RestaurantPermit(
                         permit_id=row["id"],
                         permit_type=row["permit_type"],
                         application_start_date=datetime.fromisoformat(
@@ -40,12 +60,15 @@ class Command(BaseCommand):
                         street_number=row["street_number"],
                         street_direction=row["street_direction"],
                         street_name=row["street_name"],
-                        location=row["location"],
+                        location=location,
                         community_area_id=row["community_area"],
                     )
-                    restaurant.save()
+                )
 
-                except GEOSException:
-                    self.stdout.write(
-                        f'Invalid location for ID {row["id"]}. Skipping...'
-                    )
+        RestaurantPermit.objects.bulk_create(permits, batch_size=BATCH_SIZE)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Loaded {len(permits)} permits. Skipped {skipped}."
+            )
+        )
