@@ -9,6 +9,7 @@ urlpatterns = [
     path("data/", views.DataSummary.as_view(), name="data_summary"),
     path("map-data/", views.MapDataView.as_view(), name="map_data"),
     path("map-data/trends/", views.TrendsView.as_view(), name="trends"),
+    path("map-data/delta/", views.DeltaView.as_view(), name="delta"),
     path("admin/", admin.site.urls),
     path("robots.txt/", views.robots_txt),
 ]

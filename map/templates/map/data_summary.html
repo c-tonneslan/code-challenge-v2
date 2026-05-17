@@ -57,6 +57,36 @@
           {% endfor %}
         </div>
 
+        {% if yoy_pair %}
+        <h2 class="fs-3 mt-5">{{ yoy_pair.from_year }} → {{ yoy_pair.to_year }} year-over-year</h2>
+        <p class="text-muted">
+          Where permits climbed and dropped most between the latest two years on record.
+          Backed by <code>/map-data/delta/?from={{ yoy_pair.from_year }}&amp;to={{ yoy_pair.to_year }}</code>.
+        </p>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <h3 class="fs-5 text-success">Top climbers</h3>
+            <ol class="fs-6">
+              {% for m in yoy_up %}
+                <li>{{ m.name }}
+                  <span class="text-muted">({{ m.from }} → {{ m.to }}, +{{ m.delta }})</span>
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+          <div class="col-md-6">
+            <h3 class="fs-5 text-danger">Top droppers</h3>
+            <ol class="fs-6">
+              {% for m in yoy_down %}
+                <li>{{ m.name }}
+                  <span class="text-muted">({{ m.from }} → {{ m.to }}, {{ m.delta }})</span>
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+        </div>
+        {% endif %}
+
         <h2 class="fs-3 mt-5">Top 10 community areas (all years)</h2>
         <ol class="fs-5">
           {% for row in top_areas %}

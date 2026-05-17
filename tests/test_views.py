@@ -1,6 +1,6 @@
-import pytest
 from datetime import date
 
+import pytest
 from django.shortcuts import reverse
 from rest_framework.test import APIClient
 
@@ -151,6 +151,45 @@ def test_map_data_view_csv():
     assert "num_permits" in header
     assert "permits_per_10k" in header
     assert any("Beverly" in line and ",1," in line for line in lines[1:])
+
+
+@pytest.mark.django_db
+def test_delta_view_year_over_year():
+    a = CommunityArea.objects.create(name="Beverly", area_id="1")
+    CommunityArea.objects.create(name="Lincoln Park", area_id="2")
+
+    # 2022: Beverly 2 permits, Lincoln Park 5
+    for _ in range(2):
+        RestaurantPermit.objects.create(community_area_id=a.area_id, issue_date=date(2022, 6, 1))
+    for _ in range(5):
+        RestaurantPermit.objects.create(community_area_id="2", issue_date=date(2022, 6, 1))
+    # 2023: Beverly 6 permits (+4), Lincoln Park 2 (-3)
+    for _ in range(6):
+        RestaurantPermit.objects.create(community_area_id=a.area_id, issue_date=date(2023, 6, 1))
+    for _ in range(2):
+        RestaurantPermit.objects.create(community_area_id="2", issue_date=date(2023, 6, 1))
+
+    client = APIClient()
+    r = client.get(reverse("delta"), {"from": 2022, "to": 2023})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["from_year"] == 2022
+    assert data["to_year"] == 2023
+    assert data["max_abs_delta"] == 4
+
+    by_name = {row["name"]: row for row in data["areas"]}
+    assert by_name["Beverly"]["delta"] == 4
+    assert by_name["Beverly"]["pct_change"] == 200.0
+    assert by_name["Lincoln Park"]["delta"] == -3
+    assert by_name["Lincoln Park"]["pct_change"] == -60.0
+
+
+@pytest.mark.django_db
+def test_delta_view_missing_params():
+    client = APIClient()
+    assert client.get(reverse("delta")).status_code == 400
+    assert client.get(reverse("delta"), {"from": 2022}).status_code == 400
+    assert client.get(reverse("delta"), {"from": 2022, "to": 2022}).status_code == 400
 
 
 @pytest.mark.django_db
