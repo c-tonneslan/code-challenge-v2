@@ -1,5 +1,25 @@
 # DataMade Code Challenge: React Map
 
+> ## Solution by Charlie Tonneslan
+>
+> This is my completion of DataMade's public code challenge. I'm not in an application window right now, I just wanted to do the work because civic data tooling is the kind of thing I want to build. The original brief is below, unchanged.
+>
+> **What I did**
+>
+> The challenge ships skeletons in `map/serializers.py`, `map/views.py`, `map/static/js/RestaurantPermitMap.js`, and `tests/test_views.py`. I filled them in and pushed iteratively, so the commit log walks through the work:
+>
+> - Implemented `get_num_permits` first as a per-area filter inside the serializer. Realized that was 77 SELECTs per map load and refactored: the view runs one `GROUP BY` query and hands the serializer a `{community_area_id: count}` dict to look up.
+> - Filled in the existing test, then added two more cases (no-year request, area with zero permits) plus a different-year permit in the original test so the year filter is actually exercised.
+> - Wired the React component end-to-end. Year filter, fetch on change, choropleth shaded by quartile of the year's max, total + max above the map, hover popup with the area name and count.
+> - Hit two bugs while clicking around: same-max years didn't re-style (the GeoJSON layer is keyed on `maxNumPermits`, which was stable across some year switches — fixed by keying on `${year}-${maxNumPermits}`), and fast year-changes were letting stale fetches race the new one — fixed with `AbortController` on cleanup.
+> - Added polish that turns the map into something readable on its own: a legend that spells out the permit-count range for each shade, a top-5 list under the map, and a visible error message when `/map-data/` fails instead of swallowing.
+>
+> **Files changed:** `map/serializers.py`, `map/views.py`, `map/static/js/RestaurantPermitMap.js`, `tests/test_views.py`, `README.md`.
+>
+> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `3 passed`.
+
+---
+
 ![2026 DataMade Code Challenge](https://github.com/datamade/code-challenge-v2/blob/main/map/static/images/2026-datamade-code-challenge.jpg)
 
 Welcome to the 2026 DataMade code challenge! 👋
