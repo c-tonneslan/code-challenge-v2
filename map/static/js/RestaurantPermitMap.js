@@ -114,7 +114,7 @@ export default function RestaurantPermitMap() {
           <GeoJSON
             data={RAW_COMMUNITY_AREAS}
             onEachFeature={setAreaInteraction}
-            key={maxNumPermits}
+            key={`${year}-${maxNumPermits}`}
           />
         ) : null}
       </MapContainer>
