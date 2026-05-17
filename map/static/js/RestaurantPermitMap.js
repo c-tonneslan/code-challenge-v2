@@ -69,14 +69,20 @@ function YearSelect({ year, setYear }) {
 export default function RestaurantPermitMap() {
   const [currentYearData, setCurrentYearData] = useState([])
   const [year, setYear] = useState(2026)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const controller = new AbortController()
+    setError(null)
     fetch(`/map-data/?year=${year}`, { signal: controller.signal })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`map-data returned ${res.status}`)
+        return res.json()
+      })
       .then((rows) => setCurrentYearData(rows))
       .catch((err) => {
-        if (err.name !== "AbortError") throw err
+        if (err.name === "AbortError") return
+        setError(err.message)
       })
     return () => controller.abort()
   }, [year])
@@ -151,6 +157,12 @@ export default function RestaurantPermitMap() {
       </p>
 
       <Legend maxNumPermits={maxNumPermits} />
+
+      {error && (
+        <p className="text-danger small">
+          Couldn&apos;t load map data: {error}
+        </p>
+      )}
 
       <MapContainer id="restaurant-map" center={[41.88, -87.62]} zoom={10}>
         <TileLayer
