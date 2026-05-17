@@ -5,6 +5,22 @@ from django.core.management.base import BaseCommand
 from map.models import CommunityArea
 
 
+# Toponyms that title() gets wrong. Mostly Irish surnames and a couple
+# of contractions that come through the GeoJSON in all-caps.
+_NAME_OVERRIDES = {
+    # The source GeoJSON has "OHARE" without the apostrophe; restore it.
+    "OHARE": "O'Hare",
+    "MCKINLEY PARK": "McKinley Park",
+}
+
+
+def prettify(name):
+    upper = (name or "").strip().upper()
+    if upper in _NAME_OVERRIDES:
+        return _NAME_OVERRIDES[upper]
+    return upper.title()
+
+
 class Command(BaseCommand):
     help = "Load restaurant permit data from a CSV file"
 
@@ -23,7 +39,8 @@ class Command(BaseCommand):
 
         community_area_objs = [
             CommunityArea(
-                name=c["properties"]["community"], area_id=c["properties"]["area_numbe"]
+                name=prettify(c["properties"]["community"]),
+                area_id=c["properties"]["area_numbe"],
             )
             for c in community_areas["features"]
         ]

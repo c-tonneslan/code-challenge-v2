@@ -119,14 +119,13 @@ export default function RestaurantPermitMap() {
   const metric = (row) =>
     mode === "per_capita" ? row.permits_per_10k : row.num_permits
 
-  const metricsById = useMemo(() => {
+  const rowsById = useMemo(() => {
     const map = new Map()
     for (const row of currentYearData) {
-      const v = metric(row)
-      if (v != null) map.set(String(row.area_id), v)
+      map.set(String(row.area_id), row)
     }
     return map
-  }, [currentYearData, mode])
+  }, [currentYearData])
 
   const totalPermits = useMemo(
     () => currentYearData.reduce((sum, row) => sum + row.num_permits, 0),
@@ -161,8 +160,9 @@ export default function RestaurantPermitMap() {
 
   function setAreaInteraction(feature, layer) {
     const areaId = feature.properties.area_numbe
-    const name = feature.properties.community
-    const value = metricsById.get(String(areaId))
+    const row = rowsById.get(String(areaId))
+    const name = row ? row.name : feature.properties.community
+    const value = row ? metric(row) : null
     const ratio = maxValue > 0 && value != null ? value / maxValue : 0
 
     layer.setStyle({
@@ -244,7 +244,7 @@ export default function RestaurantPermitMap() {
           <ol className="fs-5">
             {topAreas.map((row) => (
               <li key={row.area_id}>
-                {row.name.replace(/\b\w/g, (c) => c.toUpperCase())}
+                {row.name}
                 <span className="text-muted">
                   {" "}
                   ({mode === "per_capita"
