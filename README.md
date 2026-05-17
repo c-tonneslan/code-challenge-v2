@@ -32,8 +32,11 @@
 > - Added `refresh_population_from_acs` management command. Pulls tract-level total population from the Census Bureau via [DataMade's `census` library](https://github.com/datamade/census), sums by community area using the `tract_to_community_area.csv` crosswalk, writes the same shape the shipped CSV uses. Optional, the shipped CSV is the rolled-up version of the same query.
 > - New `/data/` page: server-rendered Django template with an inline-SVG bar chart of permits per year, the all-time top 10 community areas, and per-year CSV download buttons hitting the existing `?format=csv` endpoint. Works without JS.
 > - Wrote [`METHODOLOGY.md`](METHODOLOGY.md) covering sources, joins, the per-capita formula, and what the map *doesn't* see (closures, permit type, denominator quirks like the Loop's daytime-population problem).
+> - Replaced the Makefile's `curl` for the bulk permits download with a real Python scraper at `map/scraping.py`, built on [scrapelib](https://github.com/datamade/scrapelib) so retries, backoff, rate limits, and the optional app token are handled in one place. New management command: `python manage.py scrape_permits --since 2020-01-01` pulls the CSV from the Chicago Data Portal and re-runs the loader in one step. `--dry-run` to fetch + stat without loading.
+> - Added a `/map-data/delta/?from=YEAR&to=YEAR` endpoint that returns per-area year-over-year change (count delta + % change), sorted by movement. Surfaced on the `/data/` page as a "top climbers / top droppers" pair for the latest two years on record, the question a journalist would actually ask. Two GROUP BY queries joined in memory because the result set is ~77 rows; cheaper than a window function.
+> - Typed every touched module (`map/views.py`, `map/serializers.py`, `map/scraping.py`, `map/management/commands/scrape_permits.py`) and added `pyproject.toml` with ruff + mypy configs. Lint + type-check both run in CI alongside the test suite (`.github/workflows/main.yml`).
 >
-> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `7 passed`.
+> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `9 passed`. Run ruff + mypy locally with `ruff check . && mypy map`.
 >
 > **Loading the data:**
 >
