@@ -8,20 +8,25 @@ import RAW_COMMUNITY_AREAS from "../../../data/raw/community-areas.geojson"
 
 const COMMUNITY_AREA_COLORS = ["#eff3ff", "#bdd7e7", "#6baed6", "#2171b5"]
 
-function Legend({ maxNumPermits }) {
-  if (!maxNumPermits) return null
-  // Walk the four shades and spell out the permit-count range each one
-  // represents for the current year, so a viewer can read the map without
-  // having to hover every shape.
+// Render the per-capita number with one decimal when small, no decimal otherwise.
+function formatPerCapita(n) {
+  if (n == null) return "n/a"
+  return n < 10 ? n.toFixed(1) : Math.round(n).toString()
+}
+
+function Legend({ max, unitLabel, format }) {
+  if (!max) return null
+  // Walk the four shades and spell out the range each one represents for
+  // the current view, so a viewer can read the map without hovering every
+  // shape.
   const bands = COMMUNITY_AREA_COLORS.map((color, i) => {
-    const upper = Math.round(((i + 1) / COMMUNITY_AREA_COLORS.length) * maxNumPermits)
-    const lower =
-      i === 0 ? 0 : Math.round((i / COMMUNITY_AREA_COLORS.length) * maxNumPermits) + 1
-    return { color, label: lower === upper ? `${upper}` : `${lower}–${upper}` }
+    const upper = ((i + 1) / COMMUNITY_AREA_COLORS.length) * max
+    const lower = i === 0 ? 0 : (i / COMMUNITY_AREA_COLORS.length) * max
+    return { color, label: `${format(lower)} – ${format(upper)}` }
   })
   return (
     <div className="d-flex flex-wrap align-items-center gap-2 mb-3 small">
-      <span className="text-muted">Permits issued:</span>
+      <span className="text-muted">{unitLabel}:</span>
       {bands.map(({ color, label }) => (
         <span key={color} className="d-inline-flex align-items-center gap-1">
           <span
@@ -66,9 +71,31 @@ function YearSelect({ year, setYear }) {
   )
 }
 
+function MetricToggle({ mode, setMode }) {
+  return (
+    <div className="btn-group mb-3" role="group" aria-label="Metric">
+      <button
+        type="button"
+        className={`btn btn-outline-primary ${mode === "count" ? "active" : ""}`}
+        onClick={() => setMode("count")}
+      >
+        Raw permit count
+      </button>
+      <button
+        type="button"
+        className={`btn btn-outline-primary ${mode === "per_capita" ? "active" : ""}`}
+        onClick={() => setMode("per_capita")}
+      >
+        Per 10k residents
+      </button>
+    </div>
+  )
+}
+
 export default function RestaurantPermitMap() {
   const [currentYearData, setCurrentYearData] = useState([])
   const [year, setYear] = useState(2026)
+  const [mode, setMode] = useState("count")
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -87,54 +114,72 @@ export default function RestaurantPermitMap() {
     return () => controller.abort()
   }, [year])
 
-  const countsById = useMemo(() => {
+  // The current metric, as a function. Keeps the rest of the component
+  // metric-agnostic.
+  const metric = (row) =>
+    mode === "per_capita" ? row.permits_per_10k : row.num_permits
+
+  const metricsById = useMemo(() => {
     const map = new Map()
     for (const row of currentYearData) {
-      map.set(String(row.area_id), row.num_permits)
+      const v = metric(row)
+      if (v != null) map.set(String(row.area_id), v)
     }
     return map
-  }, [currentYearData])
+  }, [currentYearData, mode])
 
   const totalPermits = useMemo(
     () => currentYearData.reduce((sum, row) => sum + row.num_permits, 0),
     [currentYearData]
   )
 
-  const maxNumPermits = useMemo(
-    () => currentYearData.reduce((m, row) => Math.max(m, row.num_permits), 0),
-    [currentYearData]
-  )
+  const maxValue = useMemo(() => {
+    let m = 0
+    for (const row of currentYearData) {
+      const v = metric(row)
+      if (v != null && v > m) m = v
+    }
+    return m
+  }, [currentYearData, mode])
 
   const topAreas = useMemo(() => {
     return [...currentYearData]
-      .filter((row) => row.num_permits > 0)
-      .sort((a, b) => b.num_permits - a.num_permits)
+      .filter((row) => {
+        const v = metric(row)
+        return v != null && v > 0
+      })
+      .sort((a, b) => metric(b) - metric(a))
       .slice(0, 5)
-  }, [currentYearData])
+  }, [currentYearData, mode])
 
-  function getColor(percentageOfPermits) {
-    if (percentageOfPermits > 0.75) return COMMUNITY_AREA_COLORS[3]
-    if (percentageOfPermits > 0.5) return COMMUNITY_AREA_COLORS[2]
-    if (percentageOfPermits > 0.25) return COMMUNITY_AREA_COLORS[1]
+  function getColor(ratio) {
+    if (ratio > 0.75) return COMMUNITY_AREA_COLORS[3]
+    if (ratio > 0.5) return COMMUNITY_AREA_COLORS[2]
+    if (ratio > 0.25) return COMMUNITY_AREA_COLORS[1]
     return COMMUNITY_AREA_COLORS[0]
   }
 
   function setAreaInteraction(feature, layer) {
     const areaId = feature.properties.area_numbe
     const name = feature.properties.community
-    const count = countsById.get(String(areaId)) || 0
-    const pct = maxNumPermits > 0 ? count / maxNumPermits : 0
+    const value = metricsById.get(String(areaId))
+    const ratio = maxValue > 0 && value != null ? value / maxValue : 0
 
     layer.setStyle({
-      fillColor: getColor(pct),
-      fillOpacity: 0.75,
+      fillColor: value == null ? "#eee" : getColor(ratio),
+      fillOpacity: value == null ? 0.4 : 0.75,
       weight: 1,
       color: "#666",
     })
 
-    layer.bindPopup(
-      `<strong>${name}</strong><br/>${count} permit${count === 1 ? "" : "s"} in ${year}`
-    )
+    const popupLine =
+      mode === "per_capita"
+        ? value == null
+          ? "no population data"
+          : `${formatPerCapita(value)} permits per 10k residents`
+        : `${value || 0} permit${value === 1 ? "" : "s"}`
+    layer.bindPopup(`<strong>${name}</strong><br/>${popupLine} in ${year}`)
+
     layer.on("mouseover", () => {
       layer.setStyle({ weight: 2, color: "#222" })
       layer.openPopup()
@@ -145,18 +190,29 @@ export default function RestaurantPermitMap() {
     })
   }
 
+  const headlineMetric =
+    mode === "per_capita"
+      ? `${formatPerCapita(maxValue)} permits per 10k`
+      : `${maxValue.toLocaleString()} permits`
+
   return (
     <>
       <YearSelect year={year} setYear={setYear} />
+      <MetricToggle mode={mode} setMode={setMode} />
+
       <p className="fs-4">
-        Restaurant permits issued this year: <strong>{totalPermits.toLocaleString()}</strong>
+        Restaurant permits issued this year:{" "}
+        <strong>{totalPermits.toLocaleString()}</strong>
       </p>
       <p className="fs-4">
-        Maximum number of restaurant permits in a single area:{" "}
-        <strong>{maxNumPermits.toLocaleString()}</strong>
+        Highest in a single area: <strong>{headlineMetric}</strong>
       </p>
 
-      <Legend maxNumPermits={maxNumPermits} />
+      <Legend
+        max={maxValue}
+        unitLabel={mode === "per_capita" ? "Permits per 10k" : "Permits issued"}
+        format={mode === "per_capita" ? formatPerCapita : (n) => Math.round(n).toString()}
+      />
 
       {error && (
         <p className="text-danger small">
@@ -173,20 +229,28 @@ export default function RestaurantPermitMap() {
           <GeoJSON
             data={RAW_COMMUNITY_AREAS}
             onEachFeature={setAreaInteraction}
-            key={`${year}-${maxNumPermits}`}
+            key={`${year}-${mode}-${maxValue}`}
           />
         ) : null}
       </MapContainer>
 
       {topAreas.length > 0 && (
         <div className="mt-4">
-          <h2 className="fs-3">Most permits in {year}</h2>
+          <h2 className="fs-3">
+            {mode === "per_capita"
+              ? `Most permits per resident in ${year}`
+              : `Most permits in ${year}`}
+          </h2>
           <ol className="fs-5">
             {topAreas.map((row) => (
               <li key={row.area_id}>
                 {row.name.replace(/\b\w/g, (c) => c.toUpperCase())}
                 <span className="text-muted">
-                  {" "}({row.num_permits.toLocaleString()})
+                  {" "}
+                  ({mode === "per_capita"
+                    ? `${formatPerCapita(row.permits_per_10k)} per 10k`
+                    : row.num_permits.toLocaleString()}
+                  )
                 </span>
               </li>
             ))}
