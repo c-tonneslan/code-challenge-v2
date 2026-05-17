@@ -12,3 +12,37 @@ See: https://getbootstrap.com/docs/5.3/customize/sass/#importing
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
 }
+
+// Leaflet doesn't render anything without a fixed height on its container.
+#restaurant-map {
+  height: 70vh;
+  min-height: 420px;
+  border-radius: 4px;
+}
+
+// Mobile tightening. form-select-lg overflows a 375px screen and the
+// fs-3 / fs-4 paragraphs above the map eat too much vertical space when
+// they wrap.
+@media (max-width: 575.98px) {
+  #restaurant-map {
+    height: 55vh;
+    min-height: 320px;
+  }
+  .form-select-lg {
+    font-size: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .fs-3 {
+    font-size: 1.15rem !important;
+  }
+  .fs-4 {
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  // MetricToggle: shrink the buttons so both fit one row on iPhone SE.
+  .btn-group .btn {
+    font-size: 0.9rem;
+    padding: 0.35rem 0.6rem;
+  }
+}
