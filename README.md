@@ -25,9 +25,12 @@
 > - Break the per-area count out by `permit_type`. The popup now shows the top two categories under the count, so a heavy-renovation neighborhood reads different from a heavy-new-construction one.
 > - Title-cased the community area names at load time (with manual overrides for O'Hare and McKinley Park). Used to be a regex in the React component.
 > - Loading and empty-state messages so a year outside the dataset's range doesn't render a blank map without an explanation.
+> - Switched `load_restaurant_permits` from per-row saves to `bulk_create` with `batch_size=500`. Same change made `permit_type` strings pretty at load time, so the API now ships `"Renovation / Alteration"` instead of `"PERMIT - RENOVATION/ALTERATION"` and the React component lost a regex helper.
+> - URL state: `?year=2023&mode=per_capita` deep-links to a specific view. `history.replaceState` so back-button isn't littered.
+> - New `/map-data/trends/` endpoint returns `{trends: {area_id: {year: count}}}` from one GROUP BY. The frontend uses it to draw an inline-SVG sparkline beside each top-5 area, no charting library needed.
 > - Wrote [`METHODOLOGY.md`](METHODOLOGY.md) covering sources, joins, the per-capita formula, and what the map *doesn't* see (closures, permit type, denominator quirks like the Loop's daytime-population problem).
 >
-> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `6 passed`.
+> **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `7 passed`.
 >
 > **Loading the data:**
 >
