@@ -107,20 +107,26 @@ export default function RestaurantPermitMap() {
   const [currentYearData, setCurrentYearData] = useState([])
   const [year, setYear] = useState(2026)
   const [mode, setMode] = useState("count")
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     const controller = new AbortController()
     setError(null)
+    setLoading(true)
     fetch(`/map-data/?year=${year}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`map-data returned ${res.status}`)
         return res.json()
       })
-      .then((rows) => setCurrentYearData(rows))
+      .then((rows) => {
+        setCurrentYearData(rows)
+        setLoading(false)
+      })
       .catch((err) => {
         if (err.name === "AbortError") return
         setError(err.message)
+        setLoading(false)
       })
     return () => controller.abort()
   }, [year])
@@ -245,6 +251,17 @@ export default function RestaurantPermitMap() {
         <p className="text-danger small">
           Couldn&apos;t load map data: {error}
         </p>
+      )}
+
+      {!loading && !error && totalPermits === 0 && (
+        <p className="text-muted small">
+          No restaurant permits issued in {year}. The dataset covers permits
+          issued between 2016 and 2026; pick a year in that range.
+        </p>
+      )}
+
+      {loading && currentYearData.length === 0 && (
+        <p className="text-muted small">Loading {year}&hellip;</p>
       )}
 
       <MapContainer id="restaurant-map" center={[41.88, -87.62]} zoom={10}>
