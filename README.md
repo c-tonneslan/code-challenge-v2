@@ -28,6 +28,9 @@
 > - Switched `load_restaurant_permits` from per-row saves to `bulk_create` with `batch_size=500`. Same change made `permit_type` strings pretty at load time, so the API now ships `"Renovation / Alteration"` instead of `"PERMIT - RENOVATION/ALTERATION"` and the React component lost a regex helper.
 > - URL state: `?year=2023&mode=per_capita` deep-links to a specific view. `history.replaceState` so back-button isn't littered.
 > - New `/map-data/trends/` endpoint returns `{trends: {area_id: {year: count}}}` from one GROUP BY. The frontend uses it to draw an inline-SVG sparkline beside each top-5 area, no charting library needed.
+> - Mobile pass: gave `#restaurant-map` a `height` rule (it was rendering at 0 without one), shrunk the form select and the headline paragraphs at the 575px breakpoint, sized the metric-toggle buttons so both fit on iPhone SE width.
+> - Added `refresh_population_from_acs` management command. Pulls tract-level total population from the Census Bureau via [DataMade's `census` library](https://github.com/datamade/census), sums by community area using the `tract_to_community_area.csv` crosswalk, writes the same shape the shipped CSV uses. Optional, the shipped CSV is the rolled-up version of the same query.
+> - New `/data/` page: server-rendered Django template with an inline-SVG bar chart of permits per year, the all-time top 10 community areas, and per-year CSV download buttons hitting the existing `?format=csv` endpoint. Works without JS.
 > - Wrote [`METHODOLOGY.md`](METHODOLOGY.md) covering sources, joins, the per-capita formula, and what the map *doesn't* see (closures, permit type, denominator quirks like the Loop's daytime-population problem).
 >
 > **Running the tests:** `docker compose -f docker-compose.yml -f tests/docker-compose.yml run --rm app` &rarr; `7 passed`.
