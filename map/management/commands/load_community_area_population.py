@@ -21,10 +21,15 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         path = kwargs["csv_file"]
 
+        # Normalize names so "O'Hare" matches "OHARE", "McKinley Park"
+        # matches "MCKINLEY PARK", etc.
+        def norm(s):
+            return "".join(ch for ch in (s or "").upper() if ch.isalnum())
+
         with open(path, "r") as f:
             reader = csv.DictReader(f)
             populations = {
-                row["community_area"].strip().upper(): int(float(row["total_population"]))
+                norm(row["community_area"]): int(float(row["total_population"]))
                 for row in reader
                 if row["total_population"]
             }
@@ -32,8 +37,7 @@ class Command(BaseCommand):
         updated = 0
         missing = []
         for area in CommunityArea.objects.all():
-            key = (area.name or "").strip().upper()
-            pop = populations.get(key)
+            pop = populations.get(norm(area.name))
             if pop is None:
                 missing.append(area.name)
                 continue

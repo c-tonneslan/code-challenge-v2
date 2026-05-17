@@ -6,6 +6,7 @@ from map import views
 
 urlpatterns = [
     path("", views.Home.as_view(), name="home"),
+    path("data/", views.DataSummary.as_view(), name="data_summary"),
     path("map-data/", views.MapDataView.as_view(), name="map_data"),
     path("map-data/trends/", views.TrendsView.as_view(), name="trends"),
     path("admin/", admin.site.urls),

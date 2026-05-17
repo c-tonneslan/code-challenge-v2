@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Data summary{% endblock %}
+
+{% block body %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-10 offset-md-1">
+        <h1 class="mb-3">Data summary</h1>
+        <p class="text-muted">
+          The dataset covers <strong>{{ total }}</strong> restaurant-related permits
+          issued across all years on file. Bars show permits issued per year.
+        </p>
+
+        <div class="my-4" aria-label="Permits issued per year">
+          <svg
+            width="100%"
+            viewBox="0 0 {{ chart_width }} {{ chart_height }}"
+            role="img"
+            aria-label="Permits issued per year"
+          >
+            {% for row in yearly %}
+              <rect
+                x="{{ row.bar_x }}"
+                y="{{ row.bar_y }}"
+                width="{{ row.bar_width }}"
+                height="{{ row.bar_height }}"
+                fill="#2171b5"
+              />
+              <text
+                x="{{ row.label_x }}"
+                y="{{ row.bar_y|add:'-4' }}"
+                text-anchor="middle"
+                font-size="11"
+                fill="#444"
+              >{{ row.count }}</text>
+              <text
+                x="{{ row.label_x }}"
+                y="{{ row.label_y }}"
+                text-anchor="middle"
+                font-size="11"
+                fill="#666"
+              >{{ row.year }}</text>
+            {% endfor %}
+          </svg>
+        </div>
+
+        <h2 class="fs-3 mt-5">Download by year</h2>
+        <p class="text-muted">CSV of permit counts per community area for a given year.</p>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          {% for row in yearly %}
+            <a
+              href="{% url 'map_data' %}?year={{ row.year }}&format=csv"
+              class="btn btn-outline-primary btn-sm"
+              download="permits-{{ row.year }}.csv"
+            >{{ row.year }} CSV</a>
+          {% endfor %}
+        </div>
+
+        <h2 class="fs-3 mt-5">Top 10 community areas (all years)</h2>
+        <ol class="fs-5">
+          {% for row in top_areas %}
+            <li>
+              {{ row.name }}
+              <span class="text-muted"> ({{ row.count }})</span>
+            </li>
+          {% endfor %}
+        </ol>
+
+        <p class="mt-5 text-muted small">
+          See <a href="https://github.com/c-tonneslan/code-challenge-v2/blob/main/METHODOLOGY.md">METHODOLOGY.md</a>
+          for how the counts get computed, what's in the source data, and what the map
+          can't see (closures, permit type, daytime population).
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
