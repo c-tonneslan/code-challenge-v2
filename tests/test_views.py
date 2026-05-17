@@ -36,6 +36,10 @@ def test_map_data_view():
     client = APIClient()
     response = client.get(reverse("map_data", query={"year": 2021}))
 
-    # TODO: Complete the test by asserting that the /map-data/ endpoint
-    # returns the correct number of permits for Beverly and Lincoln 
-    # Park in 2021
+    assert response.status_code == 200
+
+    by_name = {row["name"]: row for row in response.data}
+
+    assert set(by_name) == {"Beverly", "Lincoln Park"}
+    assert by_name["Beverly"]["num_permits"] == 2
+    assert by_name["Lincoln Park"]["num_permits"] == 3
