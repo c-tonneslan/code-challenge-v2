@@ -39,9 +39,14 @@ export default function RestaurantPermitMap() {
   const [year, setYear] = useState(2026)
 
   useEffect(() => {
-    fetch(`/map-data/?year=${year}`)
+    const controller = new AbortController()
+    fetch(`/map-data/?year=${year}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((rows) => setCurrentYearData(rows))
+      .catch((err) => {
+        if (err.name !== "AbortError") throw err
+      })
+    return () => controller.abort()
   }, [year])
 
   const countsById = useMemo(() => {
